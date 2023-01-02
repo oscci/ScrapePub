@@ -16,11 +16,11 @@ require(rvest)
 
 #modified from https://www.dataquest.io/blog/web-scraping-in-r-rvest/ plus stack_overflow!
 #Demo
-simple <- read_html("https://dataquestio.github.io/web-scraping-pages/simple.html")
-
-simple %>%
-  html_nodes("p") %>%
-  html_text()
+# simple <- read_html("https://dataquestio.github.io/web-scraping-pages/simple.html")
+# 
+# simple %>%
+#   html_nodes("p") %>%
+#   html_text()
 
 #Now try Prime Scholars
 h <- "https://www.primescholars.com/acta-psychopathology.html"
@@ -107,82 +107,101 @@ rs and those will have the instruction for submission recorded.
 
 ```{r doarticle}
 #We'll write scraped information to a df based on the manual version from excel
+index<-read.csv('PSindex.csv') #list with journals and editors and vol and issue nums
+articledf<-read.csv("articles.csv")  #from excel - dataframe with col names, up to 100 rows
+j1<-7
+j2<-7 #range of journals to read
 
-articledf<-read.csv("articles.csv")  #from excel - dataframe with col names
-for (j in 1:nrow(index)){
-myr<-index$shortjournal[j]
-archsite<-paste0("https://www.primescholars.com/",myj2,"/archive.html")
+for (j in j1:j2){
+  myr<-index$shortjournal[j]
 
-#Archsite doesn't help much.
-
-#Site for each issue as https://www.primescholars.com/archive/ipap-volume-8-issue-10-year-2022.html
-#the ip is common for all journals and then ap for initials of journal
-myurl <- paste0("https://www.primescholars.com/archive/ip",index$initjournal[j],"-volume-",index$lastvol[j],"-issue-",index$lastissue[j],"-year-2022.html")
-myi <- read_html(myurl)
-# doilist<-myi %>%
-#   html_nodes("p") %>%
-#   html_text()
-# #This just gives article type, titles and dois
-# doiulist<-unlist(doilist)
-
-#Get list of urls for individual articles!
-doilist<-myi %>%
-  html_elements(".html")%>%
-  html_attr("href")
-
-doiulist<-unlist(doilist) #unlist
-
-#Now read url for each individual article
-r1<-1
-r2<-length(doilist)
-
-for (r in r1:r2){
-myu <- doiulist[[r]]
-
-
-mya <- read_html(myu)
-mya2 <- mya %>%
-  html_nodes("p") %>%
-  html_text()
-
-#get the email for author
-myemail<- mya %>%
-    html_nodes("i") %>%
-    html_attr("title")
-mye<-which(!is.na(myemail))
-thisemail<-myemail[mye]
-
-#get the ID for author
-myid<- mya %>%
-    html_nodes("a") %>%
-    html_attr("id")
-
-w<-which(myid =='back-to-top')
-ww<-which(myid== 'navbarDropdownMenuLink')
-myid<-myid[-c(w,ww)]
-myi<-which(!is.na(myid))
-thisid<-myid[myi]
-
-#get the address for author
-myad<- mya %>%
-    html_nodes("i") %>%
-    html_text("Correspondence")
-
-
-#get the title
-myt<- mya %>%
-    html_nodes("h5") %>%
-    html_text()
-
-
-#Write the scraped information to data frame
-  articledf$title[r]<-myt
- articledf$author[r]<-myid
-  articledf$email.in.pdf<-thisemail
+  archsite<-paste0("https://www.primescholars.com/",myj2,"/archive.html")
+  
+  #Archsite doesn't help much.
+  
+  #Site for each issue as https://www.primescholars.com/archive/ipap-volume-8-issue-10-year-2022.html
+  #the ip is common for all journals and then ap for initials of journal
+  vol<-index$lastvol[j]
+  r<-0 #initialise row counter
+  for (issue in seq(index$lastissue[j],1,-1)){ #go backwards through issues
+    
+    myurl <- paste0("https://www.primescholars.com/archive/",index$initjournal[j],"-volume-",vol,"-issue-",issue,"-year-2022.html")
+    myi <- read_html(myurl)
+    doilist<-myi %>%
+      html_nodes("p") %>%
+      html_text()
+    #This just gives article type, titles and dois
+    doiulist<-unlist(doilist)
+    #Find those with DOI
+    myDOI<-doiulist[grepl("DOI",doiulist)]
+    
+    #Get list of urls for individual articles!
+    artlist<-myi %>%
+      html_elements(".html")%>%
+      html_attr("href")
+    
+    artulist<-unlist(artlist) #unlist
+    
+    #Now read url for each individual article
+    n1<-1
+    n2<-length(artulist)
+    
+    for (n in n1:n2){
+      r<-r+1
+      myu <- artulist[[n]]
+      
+      
+      mya <- read_html(myu)
+      mya2 <- mya %>%
+        html_nodes("p") %>%
+        html_text()
+      
+      #get the email for author
+      myemail<- mya %>%
+        html_nodes("i") %>%
+        html_attr("title")
+      mye<-which(!is.na(myemail))
+      thisemail<-''
+      if(length(mye)>0){thisemail<-myemail[mye]}
+      
+      #get the ID for author
+      myid<- mya %>%
+        html_nodes("a") %>%
+        html_attr("id")
+      
+      w<-which(myid =='back-to-top')
+      ww<-which(myid== 'navbarDropdownMenuLink')
+      myid<-myid[-c(w,ww)]
+      myi<-which(!is.na(myid))
+      thisid<-myid[myi]
+      
+      #get the address for author
+      myad<- mya %>%
+        html_nodes("i") %>%
+        html_text("Correspondence")
+      
+      
+      #get the title
+      myt<- mya %>%
+        html_nodes("h5") %>%
+        html_text()
+      
+      
+      #Write the scraped information to data frame
+      articledf$vol[r]<-index$lastvol[j]
+      articledf$issue[r]<-issue
+      articledf$title[r]<-myt
+      articledf$Nauthors[r]<-length(thisid)
+      articledf$author[r]<-thisid[1]
+      articledf$email.in.pdf[r]<-thisemail
+      articledf$doi[r]<-myDOI[n]
+      articledf$Journal[r]<-index$journal[j]
+      
+    }
+  }
+  
+  myfilename<-paste0('PSarticles_',index$shortjournal[j],'.csv')
+  write.csv(index,myfilename,row.names=F)
 }
-
-}
-write.csv(index,'PSarticles.csv',row.names=F)
-
 
 ```
