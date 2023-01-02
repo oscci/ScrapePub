@@ -108,14 +108,17 @@ rs and those will have the instruction for submission recorded.
 ```{r doarticle}
 #We'll write scraped information to a df based on the manual version from excel
 index<-read.csv('PSindex.csv') #list with journals and editors and vol and issue nums
-articledf<-read.csv("articles.csv")  #from excel - dataframe with col names, up to 100 rows
-j1<-7
-j2<-7 #range of journals to read
+
+#done 1, 2 , 13: 20
+j1<-20
+j2<-20 #range of journals to read
 
 for (j in j1:j2){
+  articledf<-read.csv("articles.csv")  #from excel - dataframe with col names, up to 100 rows
+
   myr<-index$shortjournal[j]
 
-  archsite<-paste0("https://www.primescholars.com/",myj2,"/archive.html")
+  archsite<-paste0("https://www.primescholars.com/",myr,"/archive.html")
   
   #Archsite doesn't help much.
   
@@ -126,6 +129,7 @@ for (j in j1:j2){
   for (issue in seq(index$lastissue[j],1,-1)){ #go backwards through issues
     
     myurl <- paste0("https://www.primescholars.com/archive/",index$initjournal[j],"-volume-",vol,"-issue-",issue,"-year-2022.html")
+    Sys.sleep(2) #slow down to avoid getting throttled
     myi <- read_html(myurl)
     doilist<-myi %>%
       html_nodes("p") %>%
@@ -201,7 +205,7 @@ for (j in j1:j2){
   }
   
   myfilename<-paste0('PSarticles_',index$shortjournal[j],'.csv')
-  write.csv(index,myfilename,row.names=F)
+  write.csv(articledf,myfilename,row.names=F)
 }
 
 ```
