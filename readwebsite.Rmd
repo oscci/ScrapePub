@@ -111,15 +111,29 @@ rs and those will have the instruction for submission recorded.
 #We'll write scraped information to a df based on the manual version from excel
 index<-read.csv('PSindex.csv') #list with journals and editors and vol and issue nums
 
-#done 1, 2 , 13: 20
-j1<-2
-j2<-2 #range of journals to read
+
+#done with affil 1 :11
+#QUestion: crashes may have to do with affiliations? If author file not there
+#4 crashed at issue 1
+#7 crashed at issue 2 - has a lot of Oxford addresses
+#8 crashed at vol 5 issue 3
+#9 crashed at last vol
+#10 crashed at 6, 1
+#11 crashed at 6,3
+#12 crashed at issue 3
+#13 crashed at issue 3 (I did modify script to take 1st author only before this)
+#15 crashed at issue 3
+#16 crashed at issue 2
+#17 crashed at issue 6
+j1<-15
+j2<-15 #range of journals to read
 
 for (j in j1:j2){
+  print(j)
   articledf<-read.csv("articles.csv")  #from excel - dataframe with col names, up to 100 rows
 
   myr<-index$shortjournal[j]
-
+print(myr)
   archsite<-paste0("https://www.primescholars.com/",myr,"/archive.html")
   
   #Archsite doesn't help much.
@@ -131,7 +145,8 @@ for (j in j1:j2){
   for (issue in seq(index$lastissue[j],1,-1)){ #go backwards through issues
     
     myurl <- paste0("https://www.primescholars.com/archive/",index$initjournal[j],"-volume-",vol,"-issue-",issue,"-year-2022.html")
-    Sys.sleep(2) #slow down to avoid getting throttled
+     Sys.sleep(1) #slow down to avoid getting throttled
+     print(myurl)
     myi <- read_html(myurl)
     doilist<-myi %>%
       html_nodes("p") %>%
@@ -158,7 +173,8 @@ for (j in j1:j2){
       r<-r+1
       myu <- artulist[[n]]
       
-      
+       Sys.sleep(1) #slow down to avoid getting throttled
+       print(myu)
       mya <- read_html(myu)
       mya2 <- mya %>%
         html_nodes("p") %>%
@@ -179,7 +195,9 @@ for (j in j1:j2){
       
       w<-which(myid =='back-to-top')
       ww<-which(myid== 'navbarDropdownMenuLink')
-      myid<-myid[-c(w,ww)]
+       www<-which(myid== 'a1')
+       
+      myid<-myid[-c(w,ww,www)]
       myi<-which(!is.na(myid))
       thisid<-myid[myi]
       
@@ -192,11 +210,17 @@ for (j in j1:j2){
      #But better to find it by string matching to avoid hard coding
      w<-which(grepl( "/author/", authorlist, fixed = TRUE)==TRUE) #seems clumsy but works
      authorurl<-authorlist[w]
+     authorurl<-authorurl[1]
+      Sys.sleep(1) #slow down to avoid getting throttled
+      print(authorurl)
+      tryCatch({
      myauthor<- read_html(authorurl)
+    
      myau <- myauthor %>%
         html_nodes("p") %>%
         html_text()
-     affil<-myau[1]
+     affil<-myau[1]},
+      error=function(e){affil='x'})
      #remove /n
       thisaffil<-gsub("\n","",affil) #remove \n
       thisaffil<-gsub(";","",thisaffil) #remove ;
@@ -209,7 +233,8 @@ for (j in j1:j2){
         html_nodes("h5") %>%
         html_text()
       
-      
+      print(myt)
+      print(thisaffil)
       #Write the scraped information to data frame
       articledf$vol[r]<-index$lastvol[j]
       articledf$issue[r]<-issue
@@ -225,6 +250,7 @@ for (j in j1:j2){
   }
   
   myfilename<-paste0('PSarticles_',index$shortjournal[j],'.csv')
+  
   write.csv(articledf,myfilename,row.names=F)
 }
 
