@@ -113,20 +113,20 @@ index<-read.csv('PSindex.csv') #list with journals and editors and vol and issue
 
 
 #done with affil 1 :11
-#QUestion: crashes may have to do with affiliations? If author file not there
+# Crashes on early runs before I added Catch
 #4 crashed at issue 1
-#7 crashed at issue 2 - has a lot of Oxford addresses
-#8 crashed at vol 5 issue 3
+#7  has a lot of Oxford addresses
 #9 crashed at last vol
 #10 crashed at 6, 1
 #11 crashed at 6,3
 #12 crashed at issue 3
 #13 crashed at issue 3 (I did modify script to take 1st author only before this)
-#15 crashed at issue 3
 #16 crashed at issue 2
 #17 crashed at issue 6
-j1<-15
-j2<-15 #range of journals to read
+#38 crashed at issue 5
+#57 crashed at 2nd article issue 5
+j1<-52
+j2<-60 #range of journals to read
 
 for (j in j1:j2){
   print(j)
@@ -180,7 +180,7 @@ print(myr)
         html_nodes("p") %>%
         html_text()
       
-      #get the email for author
+      #get the email for author 
       myemail<- mya %>%
         html_nodes("i") %>%
         html_attr("title")
@@ -202,13 +202,17 @@ print(myr)
       thisid<-myid[myi]
       
       #get the address for author
-          ### #Need the html code for this author to get the address
+          ### #Need the html code for this author to get the address. This is sometimes missing, so put x
+      #(for journals before 35, the affiliation is carried over from prior article)
         authorlist<-mya %>%
       html_elements("a")%>%
       html_attr("href")
      #In this example, the author html address is row 28
      #But better to find it by string matching to avoid hard coding
      w<-which(grepl( "/author/", authorlist, fixed = TRUE)==TRUE) #seems clumsy but works
+     myauthor<-'x'
+     thisaffil<-'x'
+     if(length(w)>0){
      authorurl<-authorlist[w]
      authorurl<-authorurl[1]
       Sys.sleep(1) #slow down to avoid getting throttled
@@ -227,7 +231,7 @@ print(myr)
        thisaffil<-gsub(",","_",thisaffil) #change , to _
         ###
       
-      
+     }
       #get the title
       myt<- mya %>%
         html_nodes("h5") %>%
