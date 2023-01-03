@@ -41,7 +41,7 @@ myarch %>%
   html_text()
 
 #Site for each issue as https://www.primescholars.com/archive/ipap-volume-8-issue-10-year-2022.html
-#the ip is common for all journals and then ap for initials of journal
+#need the equivalent code to 'ipap' for each journal. Can't deduce from the title, so this is now also in the excel sheet. 
 i <- "https://www.primescholars.com/archive/ipap-volume-8-issue-10-year-2022.html"
 myi <- read_html(i)
 doilist<-myi %>%
@@ -56,6 +56,8 @@ doilist<-myi %>%
 
 ```
 
+
+
 We'll start with excel sheet and see if I can recreate the excel kind of structure for a journal not yet done.
 Excel was created manually in initial explorations. 
 
@@ -65,8 +67,8 @@ This worked - had to add the short journal name to recognise correct html. Some 
 index<-read.csv("PSindex.csv")  #from excel - dataframe with journal names
 #colnames(index)[1:2]<-c('row','journal')
 
-r1<-56 #start and end row
-r2<-58
+r1<-1 #start and end row
+r2<-1
 
 
 for (r in r1:r2){
@@ -110,8 +112,8 @@ rs and those will have the instruction for submission recorded.
 index<-read.csv('PSindex.csv') #list with journals and editors and vol and issue nums
 
 #done 1, 2 , 13: 20
-j1<-20
-j2<-20 #range of journals to read
+j1<-2
+j2<-2 #range of journals to read
 
 for (j in j1:j2){
   articledf<-read.csv("articles.csv")  #from excel - dataframe with col names, up to 100 rows
@@ -137,12 +139,14 @@ for (j in j1:j2){
     #This just gives article type, titles and dois
     doiulist<-unlist(doilist)
     #Find those with DOI
-    myDOI<-doiulist[grepl("DOI",doiulist)]
+    myDOI<-doiulist[grepl("DOI",doiulist)] #all DOIs for this issue
     
     #Get list of urls for individual articles!
     artlist<-myi %>%
       html_elements(".html")%>%
       html_attr("href")
+    
+  
     
     artulist<-unlist(artlist) #unlist
     
@@ -180,9 +184,24 @@ for (j in j1:j2){
       thisid<-myid[myi]
       
       #get the address for author
-      myad<- mya %>%
-        html_nodes("i") %>%
-        html_text("Correspondence")
+          ### #Need the html code for this author to get the address
+        authorlist<-mya %>%
+      html_elements("a")%>%
+      html_attr("href")
+     #In this example, the author html address is row 28
+     #But better to find it by string matching to avoid hard coding
+     w<-which(grepl( "/author/", authorlist, fixed = TRUE)==TRUE) #seems clumsy but works
+     authorurl<-authorlist[w]
+     myauthor<- read_html(authorurl)
+     myau <- myauthor %>%
+        html_nodes("p") %>%
+        html_text()
+     affil<-myau[1]
+     #remove /n
+      thisaffil<-gsub("\n","",affil) #remove \n
+      thisaffil<-gsub(";","",thisaffil) #remove ;
+       thisaffil<-gsub(",","_",thisaffil) #change , to _
+        ###
       
       
       #get the title
@@ -200,6 +219,7 @@ for (j in j1:j2){
       articledf$email.in.pdf[r]<-thisemail
       articledf$doi[r]<-myDOI[n]
       articledf$Journal[r]<-index$journal[j]
+      articledf$affiliation[r]<-thisaffil
       
     }
   }
