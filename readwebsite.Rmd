@@ -112,26 +112,17 @@ rs and those will have the instruction for submission recorded.
 index<-read.csv('PSindex.csv') #list with journals and editors and vol and issue nums
 
 
-#done with affil 1 :11
-# Crashes on early runs before I added Catch
-#4 crashed at issue 1
-#7  has a lot of Oxford addresses
-#9 crashed at last vol
-#10 crashed at 6, 1
-#11 crashed at 6,3
-#12 crashed at issue 3
-#13 crashed at issue 3 (I did modify script to take 1st author only before this)
-#16 crashed at issue 2
-#17 crashed at issue 6
-#38 crashed at issue 5
-#57 crashed at 2nd article issue 5
-j1<-52
-j2<-60 #range of journals to read
+
+  r<-0 #initialise row counter 
+  articledf<-read.csv("articles.csv")  #from excel - dataframe with col names, up to 100 rows
+  
+j1<-27
+j2<-27 #range of journals to read   
+
 
 for (j in j1:j2){
   print(j)
-  articledf<-read.csv("articles.csv")  #from excel - dataframe with col names, up to 100 rows
-
+   
   myr<-index$shortjournal[j]
 print(myr)
   archsite<-paste0("https://www.primescholars.com/",myr,"/archive.html")
@@ -141,9 +132,11 @@ print(myr)
   #Site for each issue as https://www.primescholars.com/archive/ipap-volume-8-issue-10-year-2022.html
   #the ip is common for all journals and then ap for initials of journal
   vol<-index$lastvol[j]
-  r<-0 #initialise row counter
-  for (issue in seq(index$lastissue[j],1,-1)){ #go backwards through issues
-    
+  startissue<-index$lastissue[j]
+  #startissue<-5
+
+  for (issue in seq(startissue,1,-1)){ #go backwards through issues
+
     myurl <- paste0("https://www.primescholars.com/archive/",index$initjournal[j],"-volume-",vol,"-issue-",issue,"-year-2022.html")
      Sys.sleep(1) #slow down to avoid getting throttled
      print(myurl)
@@ -236,6 +229,7 @@ print(myr)
       myt<- mya %>%
         html_nodes("h5") %>%
         html_text()
+      if(length(myt)==0){myt<-'x'}
       
       print(myt)
       print(thisaffil)
@@ -249,13 +243,14 @@ print(myr)
       articledf$doi[r]<-myDOI[n]
       articledf$Journal[r]<-index$journal[j]
       articledf$affiliation[r]<-thisaffil
+      articledf$jnumber[r]<-j
       
     }
   }
-  
-  myfilename<-paste0('PSarticles_',index$shortjournal[j],'.csv')
+}  
+  myfilename<-paste0('PSarticles_all.csv')
   
   write.csv(articledf,myfilename,row.names=F)
-}
+
 
 ```
