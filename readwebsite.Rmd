@@ -254,3 +254,33 @@ print(myr)
 
 
 ```
+
+
+```{r findaffil}
+affil<-'UK'
+mydf<-read.csv('PSarticles_all.csv')
+myaffils<-mydf$affiliation
+g<-grep(affil,myaffils)
+mysubset<-mydf[g,]
+
+
+
+```
+
+```{r checkemail}
+
+mydf<-read.csv('PSarticles_all.csv')
+mydf$instemail<-1 #assume institutional
+
+mye<-mydf$email.in.pdf
+elist<-c('yahoo','.com','gmail','hotmail','outlook','live.')
+for (e in 1:length(elist)){
+g<-grep(elist[e],mye)
+mydf$instemail[g]<-0
+}
+
+
+ myfilename<-paste0('PSarticles_all.csv')
+  
+  write.csv(mydf,myfilename,row.names=F)
+```
